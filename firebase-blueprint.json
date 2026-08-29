@@ -1,0 +1,32 @@
+{
+  "entities": {
+    "User": {
+      "collection": "users",
+      "fields": {
+        "displayName": { "type": "string", "description": "User display name" },
+        "email": { "type": "string", "description": "User email address" },
+        "photoURL": { "type": "string", "description": "User avatar URL" },
+        "createdAt": { "type": "timestamp", "description": "Account creation timestamp" },
+        "lastLoginAt": { "type": "timestamp", "description": "Last sign-in timestamp" },
+        "streakCount": { "type": "number", "description": "Consecutive days journaling streak" },
+        "lastJournalDate": { "type": "string", "description": "YYYY-MM-DD of last entry" }
+      }
+    },
+    "Entry": {
+      "collection": "users/{userId}/entries",
+      "fields": {
+        "title": { "type": "string", "description": "Journal entry title" },
+        "content": { "type": "string", "description": "Journal entry markdown or text content" },
+        "mood": { "type": "string", "description": "Mood descriptor (joyful, calm, reflective, neutral, anxious, sad, energized)" },
+        "tags": { "type": "array", "description": "List of user-defined tags" },
+        "date": { "type": "string", "description": "Entry date in YYYY-MM-DD format" },
+        "isFavorite": { "type": "boolean", "description": "Favorite entry flag" },
+        "wordCount": { "type": "number", "description": "Word count calculation" },
+        "readingTime": { "type": "number", "description": "Estimated minutes to read" },
+        "promptUsed": { "type": "string", "description": "Reflection prompt if inspired by one" },
+        "createdAt": { "type": "timestamp", "description": "Creation timestamp" },
+        "updatedAt": { "type": "timestamp", "description": "Last edit timestamp" }
+      }
+    }
+  }
+}
