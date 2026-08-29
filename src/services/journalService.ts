@@ -187,13 +187,14 @@ export async function addJournalEntry(
 
   const docRef = await addDoc(entriesRef, {
     ...entry,
+    promptUsed: entry.promptUsed ?? null, // Prevents Firestore crash when undefined
     wordCount: stats.wordCount,
     readingTime: stats.readingTime,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
 
-  // Update user profile streak and lastJournalDate
+// Update user profile streak and lastJournalDate
   try {
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, {
@@ -218,6 +219,10 @@ export async function updateJournalEntry(
     ...updates,
     updatedAt: serverTimestamp(),
   };
+
+  if ('promptUsed' in updates) {
+    dataToUpdate.promptUsed = updates.promptUsed ?? null;
+  }
 
   if (typeof updates.content === 'string') {
     const stats = calculateReadingStats(updates.content);
