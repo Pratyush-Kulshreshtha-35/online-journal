@@ -103,5 +103,5 @@ gcloud run deploy online-journal \
 ## 📄 License
 Distributed under the MIT License.
 ```
----
+
 #GoogleCloud #GenAIAcademy #Hack2skill #CloudRun #Gemini #ArtificialIntelligence #WebDevelopment #Firebase #React #DevCommunity #FullStack #Serverless #BuildWithAI #AccelerateAIwithCloudRun
