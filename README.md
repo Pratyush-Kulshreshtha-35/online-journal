@@ -3,6 +3,7 @@
 An AI-powered, serverless journaling and introspection application built with **React**, **TypeScript**, **Google Cloud Run**, and the **Gemini API**. Developed for the **Google Cloud Gen AI Academy APAC Edition 2026** (Cohort 3: *Accelerate AI with Cloud Run* Ideathon in partnership with **Hack2skill**).
 
 🔗 **Live Deployment:** https://online-journal-1068289664916.us-central1.run.app 
+
 💻 **GitHub Repository:** https://github.com/Pratyush-Kulshreshtha-35/online-journal
 
 ---
