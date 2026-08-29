@@ -1,16 +1,9 @@
-# Personal Gemini Journal - Project Submission Kit
-
----
-
-## 1. Project README (README.md)
-
-```markdown
 # 📓 Personal Gemini Journal
 
 An AI-powered, serverless journaling and introspection application built with **React**, **TypeScript**, **Google Cloud Run**, and the **Gemini API**. Developed for the **Google Cloud Gen AI Academy APAC Edition 2026** (Cohort 3: *Accelerate AI with Cloud Run* Ideathon in partnership with **Hack2skill**).
 
-🔗 **Live Deployment:** [https://online-journal-1068289664916.us-central1.run.app](https://online-journal-1068289664916.us-central1.run.app)  
-💻 **GitHub Repository:** [https://github.com/Pratyush-Kulshreshtha-35/online-journal](https://github.com/Pratyush-Kulshreshtha-35/online-journal)
+🔗 **Live Deployment:** https://online-journal-1068289664916.us-central1.run.app 
+💻 **GitHub Repository:** https://github.com/Pratyush-Kulshreshtha-35/online-journal
 
 ---
 
