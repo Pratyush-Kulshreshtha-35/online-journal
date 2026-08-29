@@ -103,45 +103,5 @@ gcloud run deploy online-journal \
 ## 📄 License
 Distributed under the MIT License.
 ```
-
----
-
-## 2. Brief Description of Your Solution
-
-### Short Version (Form Submission Friendly):
-**Personal Gemini Journal** is an AI-powered, serverless reflection platform designed to make daily journaling engaging, consistent, and private.
-* **Gemini:** Generates contextual writing prompts, analyzes entry sentiment to assign mood tags, and synthesizes long-term reflection trends.
-* **Firebase Authentication:** Manages secure Google Sign-In and email login to ensure strict privacy for personal reflections.
-* **Cloud Firestore:** Provides low-latency, real-time NoSQL storage to secure journal entries and metadata isolated by user UID.
-* **Google Cloud Run:** Hosts the containerized application on a scalable, zero-to-hero serverless runtime integrated with automated CI/CD via Cloud Build.
-
----
-
-## 3. LinkedIn Announcement Post
-
-Excited to announce that I built and deployed **Personal Gemini Journal** as part of the **Google Cloud Gen AI Academy APAC Edition 2026** (Cohort 3: *Accelerate AI with Cloud Run* Ideathon), organized in collaboration with **Hack2skill**! 🚀
-
-The goal was to transform how people approach daily reflection by engineering a serverless, AI-powered journaling companion with Google Cloud and Gemini.
-
-### 💡 The Problem & Solution
-Consistency is the hardest part of journaling. **Personal Gemini Journal** acts as an intelligent sounding board. Instead of facing a blank page, users get contextual writing prompts, emotional categorization, and smart summaries that help track personal growth, thought patterns, and mental clarity over time.
-
-### 🛠️ Technical Architecture & Stack
-* **AI & Natural Language:** Google AI Studio & Gemini API for reflective prompt generation, emotion tagging, and sentiment summarization.
-* **Serverless Compute:** **Google Cloud Run** to run the containerized backend with autoscaling to zero and low-latency delivery.
-* **CI/CD Pipeline:** Fully automated delivery workflow using **Google Cloud Build** connected directly to GitHub.
-* **Authentication & Persistence:** **Firebase Authentication** (Google Sign-In) and **Cloud Firestore** for secure, encrypted user reflections.
-* **Frontend:** Modern, high-performance web client built using **React**, **TypeScript**, and **Tailwind CSS** (Vite).
-
-### 🔍 Key Engineering Highlights
-* Configured Docker production multi-stage builds optimized for Vite applications on Cloud Run.
-* Handled headless runtime constraints, binding dynamic port routing (`$PORT`) and securing host allowed origins.
-* Integrated Firebase Identity Platform with Google Cloud IAM and authorized security domains.
-
-Huge thanks to the **Google Cloud** team and **Hack2skill** for organizing such an enriching, builder-focused cohort!
-
-🔗 **Live Application:** https://online-journal-1068289664916.us-central1.run.app  
-💻 **GitHub Repository:** https://github.com/Pratyush-Kulshreshtha-35/online-journal
-
 ---
 #GoogleCloud #GenAIAcademy #Hack2skill #CloudRun #Gemini #ArtificialIntelligence #WebDevelopment #Firebase #React #DevCommunity #FullStack #Serverless #BuildWithAI #AccelerateAIwithCloudRun
