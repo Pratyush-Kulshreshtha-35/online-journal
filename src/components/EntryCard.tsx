@@ -1,7 +1,20 @@
 import React from 'react';
 import { JournalEntry } from '../types/journal';
 import { MOODS } from '../data/prompts';
-import { Star, Clock, MoreVertical, Edit2, Trash2, Sparkles } from 'lucide-react';
+import {
+  Star,
+  Clock,
+  MoreVertical,
+  Edit2,
+  Trash2,
+  Sparkles,
+  Lock,
+  Image as ImageIcon,
+  Mic,
+  Video,
+  Music,
+  MapPin,
+} from 'lucide-react';
 import { toggleEntryFavorite } from '../services/journalService';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,6 +23,7 @@ interface EntryCardProps {
   onSelect: (entry: JournalEntry) => void;
   onEdit: (entry: JournalEntry) => void;
   onDelete: (entry: JournalEntry) => void;
+  isVaultUnlocked?: boolean;
 }
 
 export const EntryCard: React.FC<EntryCardProps> = ({
@@ -17,6 +31,7 @@ export const EntryCard: React.FC<EntryCardProps> = ({
   onSelect,
   onEdit,
   onDelete,
+  isVaultUnlocked = false,
 }) => {
   const { user } = useAuth();
   const [menuOpen, setMenuOpen] = React.useState(false);
@@ -39,6 +54,12 @@ export const EntryCard: React.FC<EntryCardProps> = ({
     }
   };
 
+  const isObscured = entry.isLocked && !isVaultUnlocked;
+  const firstPhoto = entry.media?.find((m) => m.type === 'photo' || m.type === 'gif');
+  const hasAudio = entry.media?.some((m) => m.type === 'audio');
+  const hasVideo = entry.media?.some((m) => m.type === 'video');
+  const hasMusic = entry.media?.some((m) => m.type === 'music');
+
   return (
     <div
       id={`entry-card-${entry.id}`}
@@ -46,7 +67,7 @@ export const EntryCard: React.FC<EntryCardProps> = ({
       className="group relative bg-[#121212] hover:bg-[#161616] border border-[#222222] hover:border-[#333333] rounded-2xl p-5 shadow-xl hover:shadow-[0_4px_24px_rgba(0,0,0,0.5)] transition-all duration-200 cursor-pointer flex flex-col justify-between"
     >
       <div>
-        {/* Top bar: Mood, Date, Favorite, Menu */}
+        {/* Top bar: Mood, Date, Lock, Favorite, Menu */}
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
             {/* Mood pill */}
@@ -61,6 +82,14 @@ export const EntryCard: React.FC<EntryCardProps> = ({
             <span className="text-[11px] text-amber-500/80 font-mono-journal uppercase tracking-wider">
               {formattedDate}
             </span>
+
+            {/* Locked badge */}
+            {entry.isLocked && (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-950/60 border border-amber-800/40 text-amber-400 text-[10px] font-mono-journal">
+                <Lock className="w-2.5 h-2.5" />
+                <span>Vault</span>
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1">
@@ -133,29 +162,69 @@ export const EntryCard: React.FC<EntryCardProps> = ({
           </div>
         </div>
 
+        {/* Thumbnail preview if photo or gif attached */}
+        {firstPhoto && !isObscured && (
+          <div className="mb-3 rounded-xl overflow-hidden max-h-40 border border-[#242424]">
+            <img
+              src={firstPhoto.url}
+              alt={firstPhoto.caption || 'Entry photo'}
+              className="w-full h-36 object-cover group-hover:scale-102 transition duration-300"
+            />
+          </div>
+        )}
+
         {/* Title */}
         <h3 className="text-lg font-serif-journal font-bold text-white line-clamp-1 group-hover:text-amber-400 transition-colors">
           {entry.title}
         </h3>
 
         {/* Prompt indicator if any */}
-        {entry.promptUsed && (
+        {entry.promptUsed && !isObscured && (
           <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-amber-400/80 italic font-serif-journal line-clamp-1">
             <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
             <span>Prompt: {entry.promptUsed}</span>
           </div>
         )}
 
-        {/* Excerpt */}
-        <p className="mt-2 text-stone-400 text-sm font-serif-journal line-clamp-3 leading-relaxed">
-          {entry.content.replace(/[#*`>-]/g, '').trim() || 'No text recorded in this entry.'}
-        </p>
+        {/* Excerpt or Locked Vault banner */}
+        {isObscured ? (
+          <div className="mt-3 p-4 bg-[#161616] border border-[#262626] rounded-xl flex items-center gap-3 text-stone-400">
+            <Lock className="w-5 h-5 text-amber-400 shrink-0" />
+            <div>
+              <p className="text-xs font-medium text-stone-300">Locked in Private Vault</p>
+              <p className="text-[10px] text-stone-500 font-mono-journal">Enter PIN to reveal reflection</p>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-2 text-stone-400 text-sm font-serif-journal line-clamp-3 leading-relaxed">
+            {entry.content.replace(/[#*`>-]/g, '').trim() || (entry.media?.length ? 'Attached media in entry.' : 'No text recorded.')}
+          </p>
+        )}
+
+        {/* Atmosphere & Place summary on Card */}
+        {(entry.weather || entry.location) && !isObscured && (
+          <div className="flex items-center gap-2 mt-2.5 text-[11px] font-mono-journal text-stone-400">
+            {entry.weather && (
+              <span className="inline-flex items-center gap-1 text-stone-300">
+                <span>{entry.weather.icon === 'sun' ? '☀️' : entry.weather.icon === 'cloud-rain' ? '🌧️' : entry.weather.icon === 'cloud-snow' ? '❄️' : '⛅'}</span>
+                <span>{entry.weather.temperatureC !== undefined ? `${entry.weather.temperatureC}°C` : entry.weather.condition}</span>
+              </span>
+            )}
+            {entry.weather && entry.location && <span className="text-stone-600">•</span>}
+            {entry.location && (
+              <span className="inline-flex items-center gap-1 text-stone-400 truncate max-w-[150px]" title={entry.location.placeName}>
+                <MapPin className="w-3 h-3 text-amber-500 shrink-0" />
+                <span className="truncate">{entry.location.placeName?.split(',')[0] || entry.location.city}</span>
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Footer: Tags & Reading stats */}
+      {/* Footer: Tags, Media Badges & Reading stats */}
       <div className="mt-4 pt-3 border-t border-[#1F1F1F] flex items-center justify-between text-xs text-stone-500">
         <div className="flex items-center gap-1.5 flex-wrap">
-          {entry.tags?.slice(0, 3).map((tag) => (
+          {entry.tags?.slice(0, 2).map((tag) => (
             <span
               key={tag}
               className="px-2 py-0.5 rounded-md bg-[#181818] border border-[#262626] text-stone-300 text-[11px] font-medium"
@@ -163,8 +232,15 @@ export const EntryCard: React.FC<EntryCardProps> = ({
               #{tag}
             </span>
           ))}
-          {entry.tags && entry.tags.length > 3 && (
-            <span className="text-[10px] text-stone-500 font-mono-journal">+{entry.tags.length - 3}</span>
+
+          {/* Media Indicators */}
+          {entry.media && entry.media.length > 0 && !isObscured && (
+            <div className="flex items-center gap-1 ml-1 text-stone-400">
+              {firstPhoto && <ImageIcon className="w-3 h-3 text-sky-400" />}
+              {hasAudio && <Mic className="w-3 h-3 text-emerald-400" />}
+              {hasVideo && <Video className="w-3 h-3 text-rose-400" />}
+              {hasMusic && <Music className="w-3 h-3 text-purple-400" />}
+            </div>
           )}
         </div>
 

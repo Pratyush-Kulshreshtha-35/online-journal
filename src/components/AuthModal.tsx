@@ -1,7 +1,20 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../lib/firebase';
-import { BookOpen, Sparkles, Mail, Lock, User, ArrowRight, X, AlertCircle } from 'lucide-react';
+import {
+  BookOpen,
+  Sparkles,
+  Mail,
+  Lock,
+  User,
+  ArrowRight,
+  X,
+  AlertCircle,
+  ExternalLink,
+  Copy,
+  Check,
+  ShieldAlert,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface AuthModalProps {
@@ -17,14 +30,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   initialMode = 'signin',
   forced = false,
 }) => {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, signInAsGuest, error, clearError } = useAuth();
+  const {
+    signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
+    signInAsGuest,
+    startLocalSession,
+    refererBlockInfo,
+    error,
+    clearError,
+  } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleCopyOrigin = (urlToCopy: string) => {
+    navigator.clipboard.writeText(urlToCopy);
+    setCopiedUrl(true);
+    setTimeout(() => setCopiedUrl(false), 2500);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,12 +88,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setLoading(true);
     try {
       await signInAsGuest();
-      if (auth.currentUser && onClose) onClose();
+      if (onClose) onClose();
     } catch {
       // Handled in auth context
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleStartLocal = () => {
+    startLocalSession();
+    if (onClose) onClose();
   };
 
   return (
@@ -78,7 +112,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 10 }}
           transition={{ duration: 0.2 }}
-          className="relative w-full max-w-md bg-[#0F0F0F] border border-[#262626] rounded-2xl shadow-2xl p-6 sm:p-8 text-stone-200 overflow-hidden"
+          className="relative w-full max-w-lg bg-[#0F0F0F] border border-[#262626] rounded-2xl shadow-2xl p-6 sm:p-8 text-stone-200 overflow-hidden"
           id="auth-card"
         >
           {/* Subtle gold accent highlight */}
@@ -95,7 +129,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           )}
 
           {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-xl bg-amber-950/40 border border-amber-800/40 flex items-center justify-center text-amber-400 shadow-md">
               <BookOpen className="w-5 h-5" />
             </div>
@@ -110,6 +144,101 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </p>
             </div>
           </div>
+
+          {/* Google Cloud Referrer Restriction Notice */}
+          {refererBlockInfo && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-5 p-4 bg-amber-950/40 border border-amber-700/60 rounded-xl text-amber-200 text-xs space-y-3"
+              id="referer-blocked-helper"
+            >
+              <div className="flex items-center gap-2 text-amber-300 font-semibold">
+                <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Google Cloud API Key Restriction Detected</span>
+              </div>
+              <p className="text-stone-300 leading-relaxed">
+                Google Cloud rejected the sign-in request because the API key (ending in <code className="text-amber-300 bg-black/50 px-1 py-0.5 rounded font-mono font-bold">{refererBlockInfo.keySuffix || '...IRUk-Xk'}</code>) is restricted. Here is how to fix it:
+              </p>
+
+              <div className="space-y-2 bg-[#0A0A0A]/95 p-3 rounded-lg border border-[#2B2B2B] text-[11px]">
+                <div className="text-stone-200">
+                  <span className="font-bold text-amber-400">Step 1 — Verify the API Key: </span>
+                  In Google Cloud Console &gt; Credentials, check that you are editing the key ending in <span className="text-amber-300 font-mono font-bold">{refererBlockInfo.keySuffix || '...IRUk-Xk'}</span>.
+                </div>
+
+                <div className="text-stone-200 pt-2 border-t border-[#222222]">
+                  <span className="font-bold text-amber-400">Step 2 (Instant Fix): </span>
+                  Under <em>Application restrictions</em>, click the radio button <strong className="text-white">"None"</strong>, then click the blue <strong className="text-white">Save</strong> button.
+                </div>
+
+                <div className="text-stone-300 pt-2 border-t border-[#222222]">
+                  <span className="font-bold text-stone-400">Alternative (Keep Website restrictions): </span>
+                  Click <strong className="text-white">+ Add</strong>, paste either of these patterns, and click <strong className="text-white">Save</strong>:
+                </div>
+
+                <div className="flex items-center gap-2 bg-[#141414] p-1.5 rounded border border-[#282828] mt-1">
+                  <input
+                    type="text"
+                    readOnly
+                    value={refererBlockInfo.allowedPattern}
+                    onFocus={(e) => e.target.select()}
+                    className="text-[11px] text-amber-300 font-mono bg-transparent w-full outline-none select-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleCopyOrigin(refererBlockInfo.allowedPattern)}
+                    className="px-2.5 py-1 bg-[#222222] hover:bg-[#2E2E2E] text-stone-200 rounded text-[10px] flex items-center gap-1.5 shrink-0 transition"
+                  >
+                    {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedUrl ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {refererBlockInfo.rawMessage && (
+                <details className="text-[10px] text-stone-400 cursor-pointer pt-0.5">
+                  <summary className="hover:text-stone-300 font-mono">View raw error message</summary>
+                  <pre className="mt-1 p-2 bg-black/60 rounded border border-stone-800 text-[10px] text-rose-300 overflow-x-auto whitespace-pre-wrap">
+                    {refererBlockInfo.rawMessage}
+                  </pre>
+                </details>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                <a
+                  href={refererBlockInfo.gcpConsoleUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#181818] hover:bg-[#222222] border border-[#333333] text-amber-300 text-[11px] font-medium transition"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open Google Cloud Credentials</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={handleStartLocal}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-black text-[11px] font-bold transition shadow-xs"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Continue in Local Sanctuary Mode</span>
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Standard Error Message if not referer error */}
+          {error && !refererBlockInfo && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 p-3 bg-rose-950/40 border border-rose-800/60 rounded-xl text-rose-300 text-xs flex items-start gap-2"
+              id="auth-error-banner"
+            >
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+              <span>{error}</span>
+            </motion.div>
+          )}
 
           {/* Mode Switcher Tabs */}
           <div className="flex p-1 mb-5 bg-[#141414] rounded-xl border border-[#242424]">
@@ -144,19 +273,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               Create Account
             </button>
           </div>
-
-          {/* Error Message */}
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-3 bg-rose-950/40 border border-rose-800/60 rounded-xl text-rose-300 text-xs flex items-start gap-2"
-              id="auth-error-banner"
-            >
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
-              <span>{error}</span>
-            </motion.div>
-          )}
 
           {/* Google Sign-In Quick Action */}
           <button
@@ -273,17 +389,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </button>
           </form>
 
-          {/* Guest Tryout Option */}
-          <div className="mt-5 pt-4 border-t border-[#242424] text-center">
+          {/* Instant Options */}
+          <div className="mt-5 pt-4 border-t border-[#242424] flex flex-col gap-2.5 items-center">
+            <button
+              id="btn-start-local-modal"
+              type="button"
+              onClick={handleStartLocal}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#181818] hover:bg-[#222222] border border-[#2E2E2E] text-xs text-amber-400 font-medium transition"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Continue in Local Sanctuary Mode (No setup needed)</span>
+            </button>
             <button
               id="guest-signin-button"
               type="button"
               onClick={handleGuestSignIn}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 text-xs text-stone-400 hover:text-amber-400 transition font-medium"
+              className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-300 transition"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>Or try instantly as a Guest (no email required)</span>
+              <span>Or try Anonymous Firebase Session</span>
             </button>
           </div>
         </motion.div>

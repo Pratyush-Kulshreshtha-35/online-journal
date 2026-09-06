@@ -6,6 +6,7 @@
     background-color: #0A0A0A;
     color: #D4D4D4;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 }
 
@@ -32,4 +33,130 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #3a3a3a;
 }
+
+/* ==========================================================================
+   Traditional Paper Reading Mode
+   A tactile, warm stationery aesthetic evoking archival print, ivory vellum,
+   and soothing eye-comfort for reflective journaling.
+   ========================================================================== */
+
+:root.theme-paper,
+.theme-paper body {
+  background-color: #F7F4EC !important;
+  color: #24201C !important;
+}
+
+/* Header & Sticky Bars */
+.theme-paper header {
+  background-color: rgba(247, 244, 236, 0.94) !important;
+  border-bottom-color: #E2DBD0 !important;
+}
+
+/* Main background surfaces */
+.theme-paper [class*="bg-[#0A0A0A]"],
+.theme-paper [class*="bg-[#0a0a0a]"],
+.theme-paper [class*="bg-[#070707]"] {
+  background-color: #F7F4EC !important;
+}
+
+/* Primary cards & modal dialog surfaces */
+.theme-paper [class*="bg-[#111111]"],
+.theme-paper [class*="bg-[#121212]"],
+.theme-paper [class*="bg-[#0F0F0F]"],
+.theme-paper [class*="bg-[#0f0f0f]"] {
+  background-color: #FFFFFF !important;
+  border-color: #E2DBD0 !important;
+  box-shadow: 0 4px 20px -2px rgba(85, 70, 55, 0.07), 0 1px 3px 0 rgba(85, 70, 55, 0.05) !important;
+}
+
+/* Subtle secondary surfaces, pill containers & nested blocks */
+.theme-paper [class*="bg-[#141414]"],
+.theme-paper [class*="bg-[#161616]"],
+.theme-paper [class*="bg-[#181818]"],
+.theme-paper [class*="bg-[#1a1a1a]"],
+.theme-paper [class*="bg-[#1c1c1c]"],
+.theme-paper [class*="bg-[#1f1f1f]"],
+.theme-paper [class*="bg-[#202020]"],
+.theme-paper [class*="bg-[#222222]"] {
+  background-color: #EFE9DE !important;
+  border-color: #DFD7CA !important;
+}
+
+/* Button & Card Hover States in Paper Mode */
+.theme-paper [class*="hover:bg-[#161616]"]:hover,
+.theme-paper [class*="hover:bg-[#181818]"]:hover,
+.theme-paper [class*="hover:bg-[#1C1C1C]"]:hover,
+.theme-paper [class*="hover:bg-[#1F1F1F]"]:hover,
+.theme-paper [class*="hover:bg-[#202020]"]:hover,
+.theme-paper [class*="hover:bg-[#222222]"]:hover,
+.theme-paper [class*="hover:bg-[#252525]"]:hover {
+  background-color: #E5DEC0 !important;
+}
+
+/* Borders across containers, cards, and dividers */
+.theme-paper [class*="border-[#222222]"],
+.theme-paper [class*="border-[#242424]"],
+.theme-paper [class*="border-[#262626]"],
+.theme-paper [class*="border-[#282828]"],
+.theme-paper [class*="border-[#2A2A2A]"],
+.theme-paper [class*="border-[#333333]"],
+.theme-paper [class*="border-stone-800"] {
+  border-color: #E2DBD0 !important;
+}
+
+/* Text Hierarchy in Paper Mode: Archival Inks */
+.theme-paper .text-white,
+.theme-paper [class*="text-[#D4D4D4]"],
+.theme-paper [class*="text-stone-100"],
+.theme-paper [class*="text-stone-200"] {
+  color: #201C18 !important;
+}
+
+.theme-paper [class*="text-stone-300"],
+.theme-paper [class*="text-stone-400"] {
+  color: #554D44 !important;
+}
+
+.theme-paper [class*="text-stone-500"] {
+  color: #797064 !important;
+}
+
+.theme-paper [class*="text-stone-600"] {
+  color: #928779 !important;
+}
+
+/* Form Inputs, Textareas & Controls */
+.theme-paper input:not([type="checkbox"]):not([type="radio"]),
+.theme-paper textarea,
+.theme-paper select {
+  background-color: #FFFFFF !important;
+  color: #201C18 !important;
+  border-color: #DFD7CA !important;
+}
+
+.theme-paper input::placeholder,
+.theme-paper textarea::placeholder {
+  color: #928779 !important;
+}
+
+/* Scrollbars in Paper Mode */
+.theme-paper ::-webkit-scrollbar-track {
+  background: #F7F4EC !important;
+}
+.theme-paper ::-webkit-scrollbar-thumb {
+  background: #D8D0C3 !important;
+}
+.theme-paper ::-webkit-scrollbar-thumb:hover {
+  background: #BFB5A5 !important;
+}
+
+/* Recharts in Paper Mode */
+.theme-paper .recharts-cartesian-grid line {
+  stroke: #E2DBD0 !important;
+}
+
+.theme-paper .recharts-text {
+  fill: #6B6256 !important;
+}
+
 

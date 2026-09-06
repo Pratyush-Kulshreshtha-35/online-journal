@@ -18,4 +18,15 @@ export const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestore
   ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
   : getFirestore(app);
 
+// Test connection on boot per Firebase skill guidelines
+import('firebase/firestore').then(({ getDocFromServer, doc }) => {
+  getDocFromServer(doc(db, 'test', 'connection')).catch((error) => {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.debug('Firebase connection note:', error.message);
+    }
+  });
+}).catch(() => {
+  // Safe fallback
+});
+
 export default app;

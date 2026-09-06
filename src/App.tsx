@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { Header } from './components/Header';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { Header, MainTabType } from './components/Header';
 import { AuthModal } from './components/AuthModal';
 import { EntryEditor } from './components/EntryEditor';
 import { EntryCard } from './components/EntryCard';
@@ -9,6 +10,12 @@ import { FilterBar } from './components/FilterBar';
 import { CalendarView } from './components/CalendarView';
 import { AnalyticsView } from './components/AnalyticsView';
 import { PromptsDeck } from './components/PromptsDeck';
+import { FlashbacksView } from './components/FlashbacksView';
+import { MemoryMapView } from './components/MemoryMapView';
+import { AIDigestModal } from './components/AIDigestModal';
+import { ReleasePadModal } from './components/ReleasePadModal';
+import { PinVaultModal, isVaultConfigured } from './components/PinVaultModal';
+import { BookPrintModal } from './components/BookPrintModal';
 import { EmptyState } from './components/EmptyState';
 import {
   JournalEntry,
@@ -18,26 +25,31 @@ import {
   subscribeUserEntries,
   deleteJournalEntry,
   computeJournalStats,
+  seed30DaySampleEntries,
 } from './services/journalService';
 import {
   BookOpen,
   Sparkles,
   Lock,
-  Plus,
   Shield,
   Loader2,
   Trash2,
+  History,
+  Image as ImageIcon,
+  Headphones,
+  X,
 } from 'lucide-react';
 
 function JournalAppContent() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, startLocalSession } = useAuth();
+  const { isPaper } = useTheme();
 
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [entriesLoading, setEntriesLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   // Active Main View Tab
-  const [activeTab, setActiveTab] = useState<'entries' | 'calendar' | 'analytics' | 'prompts'>('entries');
+  const [activeTab, setActiveTab] = useState<MainTabType>('entries');
 
   // Modals & Drawers
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
@@ -46,6 +58,28 @@ function JournalAppContent() {
   const [activePromptForEditor, setActivePromptForEditor] = useState<string | null>(null);
   const [detailEntry, setDetailEntry] = useState<JournalEntry | null>(null);
   const [deleteConfirmEntry, setDeleteConfirmEntry] = useState<JournalEntry | null>(null);
+
+  // Advanced Feature Modals
+  const [aiDigestOpen, setAiDigestOpen] = useState<boolean>(false);
+  const [releasePadOpen, setReleasePadOpen] = useState<boolean>(false);
+  const [pinVaultOpen, setPinVaultOpen] = useState<boolean>(false);
+  const [bookPrintOpen, setBookPrintOpen] = useState<boolean>(false);
+  const [isVaultUnlocked, setIsVaultUnlocked] = useState<boolean>(false);
+  const [flashbackBannerDismissed, setFlashbackBannerDismissed] = useState<boolean>(false);
+  const [isSeedingData, setIsSeedingData] = useState<boolean>(false);
+
+  const handleSeedSampleEntries = async () => {
+    if (!user) return;
+    try {
+      setIsSeedingData(true);
+      const updated = await seed30DaySampleEntries(user.uid);
+      setEntries(updated);
+    } catch (err) {
+      console.error('Failed to seed sample entries:', err);
+    } finally {
+      setIsSeedingData(false);
+    }
+  };
 
   // Filter State
   const [filter, setFilter] = useState<EntryFilter>({
@@ -135,6 +169,50 @@ function JournalAppContent() {
       });
   }, [entries, filter]);
 
+  // Check for an "On This Day" or Milestone memory for the banner
+  const todayFlashback = useMemo(() => {
+    if (entries.length === 0) return null;
+    const today = new Date();
+    const todayMonthDay = `${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const todayStr = today.toISOString().split('T')[0];
+
+    // Priority 1: Exact day from a previous year
+    const yearly = entries.find((e) => e.date !== todayStr && e.date.slice(5) === todayMonthDay);
+    if (yearly) {
+      const entryYear = parseInt(yearly.date.slice(0, 4), 10);
+      const yearsAgo = today.getFullYear() - entryYear;
+      return {
+        entry: yearly,
+        label: yearsAgo > 0 ? `${yearsAgo} year${yearsAgo > 1 ? 's' : ''} ago today` : 'On this day',
+      };
+    }
+
+    // Priority 2: Milestone deltas
+    const targetDeltas = [
+      { days: 7, label: '1 week ago' },
+      { days: 14, label: '2 weeks ago' },
+      { days: 30, label: '1 month ago' },
+      { days: 60, label: '2 months ago' },
+      { days: 90, label: '3 months ago' },
+      { days: 365, label: '1 year ago' },
+    ];
+
+    for (const target of targetDeltas) {
+      const match = entries.find((e) => {
+        if (e.date === todayStr) return false;
+        const entryDate = new Date(e.date + 'T00:00:00');
+        const diffMs = today.getTime() - entryDate.getTime();
+        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+        return Math.abs(diffDays - target.days) <= 1;
+      });
+      if (match) {
+        return { entry: match, label: target.label };
+      }
+    }
+
+    return null;
+  }, [entries]);
+
   // Handlers
   const handleOpenNewEntry = (presetDate?: string) => {
     if (!user) {
@@ -177,23 +255,32 @@ function JournalAppContent() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A] text-stone-400">
+      <div className={`min-h-screen flex items-center justify-center transition-colors duration-200 ${
+        isPaper ? 'bg-[#F7F4EC] text-stone-700' : 'bg-[#0A0A0A] text-stone-400'
+      }`}>
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-          <span className="font-serif-journal text-stone-300 text-sm">Opening your journal...</span>
+          <span className="font-serif-journal text-sm">Opening your journal vault...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0A0A0A] text-[#D4D4D4] selection:bg-amber-950">
+    <div className={`min-h-screen flex flex-col transition-colors duration-200 ${
+      isPaper ? 'bg-[#F7F4EC] text-[#24201C] selection:bg-amber-200' : 'bg-[#0A0A0A] text-[#D4D4D4] selection:bg-amber-950'
+    }`}>
       {/* App Header */}
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onOpenNewEntry={() => handleOpenNewEntry()}
         onOpenAuthModal={() => setAuthModalOpen(true)}
+        onOpenAIDigest={() => setAiDigestOpen(true)}
+        onOpenReleasePad={() => setReleasePadOpen(true)}
+        onOpenPinVault={() => setPinVaultOpen(true)}
+        onOpenBookPrint={() => setBookPrintOpen(true)}
+        isVaultUnlocked={isVaultUnlocked}
         stats={stats}
         entries={entries}
       />
@@ -205,16 +292,16 @@ function JournalAppContent() {
           <div className="max-w-3xl mx-auto py-12 text-center space-y-8">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-950/40 border border-amber-800/40 text-amber-300 text-xs font-semibold uppercase tracking-wider font-mono-journal">
               <Shield className="w-3.5 h-3.5 text-amber-400" />
-              <span>Private & Firestore Encrypted</span>
+              <span>Private & Firestore Secured</span>
             </div>
 
             <div className="space-y-4">
               <h1 className="text-4xl sm:text-5xl font-serif-journal font-bold tracking-tight text-white leading-tight">
-                Your quiet sanctuary for thoughts, memories, and self-reflection.
+                Your sanctuary for mindful thoughts, multimedia memories, and deep reflection.
               </h1>
               <p className="text-base sm:text-lg text-stone-400 font-serif-journal max-w-xl mx-auto leading-relaxed">
-                A minimal, authenticated journal app with mood tracking, reflection prompts,
-                calendar insights, and cloud persistence with Firebase and Cloud Firestore.
+                A modern private diary with voice notes, photo galleries, video links, ambient soundscapes,
+                AI Socratic reflections, PIN security, and cloud persistence.
               </p>
             </div>
 
@@ -227,16 +314,25 @@ function JournalAppContent() {
                 <BookOpen className="w-4 h-4" />
                 <span>Start Journaling</span>
               </button>
+
+              <button
+                id="btn-start-instant-local"
+                onClick={() => startLocalSession()}
+                className="w-full sm:w-auto px-6 py-3 bg-[#161616] hover:bg-[#202020] text-stone-200 hover:text-amber-400 border border-[#2A2A2A] rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>Try Instantly (Local Sanctuary)</span>
+              </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-10 text-left">
               <div className="p-5 bg-[#111111] border border-[#222222] rounded-2xl shadow-xl">
                 <div className="w-8 h-8 rounded-lg bg-amber-950/40 border border-amber-800/40 text-amber-400 flex items-center justify-center mb-3">
-                  <Lock className="w-4 h-4" />
+                  <ImageIcon className="w-4 h-4" />
                 </div>
-                <h3 className="font-serif-journal font-bold text-white text-base">Private Firestore</h3>
+                <h3 className="font-serif-journal font-bold text-white text-base">Photos, Audio & Video</h3>
                 <p className="text-xs text-stone-400 mt-1 leading-relaxed">
-                  Security rules guarantee only you have read and write access to your entries.
+                  Enrich entries with voice notes, curated imagery, YouTube video embeds, and soundtrack links.
                 </p>
               </div>
 
@@ -244,19 +340,19 @@ function JournalAppContent() {
                 <div className="w-8 h-8 rounded-lg bg-amber-950/40 border border-amber-800/40 text-amber-400 flex items-center justify-center mb-3">
                   <Sparkles className="w-4 h-4" />
                 </div>
-                <h3 className="font-serif-journal font-bold text-white text-base">Daily Reflection</h3>
+                <h3 className="font-serif-journal font-bold text-white text-base">Gemini AI Socratic Partner</h3>
                 <p className="text-xs text-stone-400 mt-1 leading-relaxed">
-                  Deep curated prompt decks and mood tracking to nurture your wellbeing.
+                  Unlock hidden self-insights with mindful Socratic inquiry and weekly emotional digests.
                 </p>
               </div>
 
               <div className="p-5 bg-[#111111] border border-[#222222] rounded-2xl shadow-xl">
                 <div className="w-8 h-8 rounded-lg bg-amber-950/40 border border-amber-800/40 text-amber-400 flex items-center justify-center mb-3">
-                  <BookOpen className="w-4 h-4" />
+                  <Lock className="w-4 h-4" />
                 </div>
-                <h3 className="font-serif-journal font-bold text-white text-base">Rich Markdown & Export</h3>
+                <h3 className="font-serif-journal font-bold text-white text-base">PIN Vault & Soundscapes</h3>
                 <p className="text-xs text-stone-400 mt-1 leading-relaxed">
-                  Format thoughts seamlessly and backup your personal archive to Markdown or JSON anytime.
+                  Keep secret reflections locked under PIN code while writing to gentle synthesizer rain & lo-fi sounds.
                 </p>
               </div>
             </div>
@@ -273,6 +369,61 @@ function JournalAppContent() {
             {/* Tab 1: Entries Stream */}
             {activeTab === 'entries' && (
               <div>
+                {/* On This Day / Memory Flashback Banner */}
+                {todayFlashback && !flashbackBannerDismissed && (
+                  <div
+                    id="flashback-banner"
+                    className="mb-6 p-4 rounded-2xl bg-linear-to-r from-amber-950/40 via-[#181818] to-stone-900 border border-amber-800/40 flex flex-wrap items-center justify-between gap-4 shadow-lg animate-fade-in"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                        <History className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] uppercase tracking-wider font-mono-journal text-amber-400 font-semibold">
+                            Time Capsule • {todayFlashback.label}
+                          </span>
+                        </div>
+                        <h4 className="text-white font-serif-journal font-bold text-sm sm:text-base line-clamp-1">
+                          "{todayFlashback.entry.title || 'Untitled reflection'}"
+                        </h4>
+                        <p className="text-xs text-stone-400 font-serif-journal line-clamp-1 italic">
+                          {todayFlashback.entry.content.replace(/[#*`_]/g, '')}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        id="btn-flashback-read"
+                        type="button"
+                        onClick={() => setDetailEntry(todayFlashback.entry)}
+                        className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold font-sans transition cursor-pointer"
+                      >
+                        Read Memory
+                      </button>
+                      <button
+                        id="btn-flashback-all"
+                        type="button"
+                        onClick={() => setActiveTab('flashbacks')}
+                        className="px-3 py-1.5 rounded-xl bg-[#222222] hover:bg-[#2A2A2A] text-stone-300 text-xs font-medium transition cursor-pointer"
+                      >
+                        All Flashbacks
+                      </button>
+                      <button
+                        id="btn-flashback-dismiss"
+                        type="button"
+                        onClick={() => setFlashbackBannerDismissed(true)}
+                        className="p-1.5 text-stone-500 hover:text-stone-300 rounded-lg transition cursor-pointer"
+                        title="Dismiss banner"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Search and Filters */}
                 {entries.length > 0 && (
                   <FilterBar
@@ -293,6 +444,7 @@ function JournalAppContent() {
                         onSelect={(e) => setDetailEntry(e)}
                         onEdit={(e) => handleEditEntry(e)}
                         onDelete={(e) => setDeleteConfirmEntry(e)}
+                        isVaultUnlocked={isVaultUnlocked}
                       />
                     ))}
                   </div>
@@ -315,7 +467,28 @@ function JournalAppContent() {
               </div>
             )}
 
-            {/* Tab 2: Calendar View */}
+            {/* Tab 2: Flashbacks / On This Day */}
+            {activeTab === 'flashbacks' && (
+              <FlashbacksView
+                entries={entries}
+                onSelectEntry={(e) => setDetailEntry(e)}
+                onEditEntry={(e) => handleEditEntry(e)}
+                onDeleteEntry={(e) => setDeleteConfirmEntry(e)}
+                onWriteNewEntry={() => handleOpenNewEntry()}
+              />
+            )}
+
+            {/* Tab 3: Sanctuary & Journey Map */}
+            {activeTab === 'map' && (
+              <MemoryMapView
+                entries={entries}
+                onSelectEntry={(e) => setDetailEntry(e)}
+                onEditEntry={(e) => handleEditEntry(e)}
+                onWriteNewEntry={() => handleOpenNewEntry()}
+              />
+            )}
+
+            {/* Tab 4: Calendar View */}
             {activeTab === 'calendar' && (
               <CalendarView
                 entries={entries}
@@ -324,12 +497,17 @@ function JournalAppContent() {
               />
             )}
 
-            {/* Tab 3: Insights & Analytics */}
+            {/* Tab 4: Insights & Analytics */}
             {activeTab === 'analytics' && (
-              <AnalyticsView stats={stats} entries={entries} />
+              <AnalyticsView
+                stats={stats}
+                entries={entries}
+                onSeedSampleData={handleSeedSampleEntries}
+                isSeeding={isSeedingData}
+              />
             )}
 
-            {/* Tab 4: Prompts & Inspiration Deck */}
+            {/* Tab 5: Prompts & Inspiration Deck */}
             {activeTab === 'prompts' && (
               <PromptsDeck onSelectPrompt={(p) => handleOpenPromptInEditor(p)} />
             )}
@@ -351,6 +529,37 @@ function JournalAppContent() {
         onClose={() => setDetailEntry(null)}
         onEdit={(e) => handleEditEntry(e)}
         onDelete={(e) => setDeleteConfirmEntry(e)}
+        isVaultUnlocked={isVaultUnlocked}
+        onUnlockVault={() => setIsVaultUnlocked(true)}
+      />
+
+      {/* AI Digest Modal */}
+      <AIDigestModal
+        isOpen={aiDigestOpen}
+        onClose={() => setAiDigestOpen(false)}
+        entries={entries}
+      />
+
+      {/* Release & Burn Pad Modal */}
+      <ReleasePadModal
+        isOpen={releasePadOpen}
+        onClose={() => setReleasePadOpen(false)}
+      />
+
+      {/* PIN Vault Modal */}
+      <PinVaultModal
+        isOpen={pinVaultOpen}
+        onClose={() => setPinVaultOpen(false)}
+        isUnlocked={isVaultUnlocked}
+        onUnlockSuccess={() => setIsVaultUnlocked(true)}
+        onLock={() => setIsVaultUnlocked(false)}
+      />
+
+      {/* Book Print & PDF Publishing Modal */}
+      <BookPrintModal
+        isOpen={bookPrintOpen}
+        onClose={() => setBookPrintOpen(false)}
+        entries={entries}
       />
 
       {/* Auth Modal */}
@@ -397,8 +606,10 @@ function JournalAppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <JournalAppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <JournalAppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

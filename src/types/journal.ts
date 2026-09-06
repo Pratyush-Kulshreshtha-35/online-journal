@@ -18,6 +18,33 @@ export interface MoodConfig {
   accentDot: string;
 }
 
+export interface MediaAttachment {
+  id: string;
+  type: 'photo' | 'video' | 'gif' | 'audio' | 'music';
+  url: string; // URL or base64 data string
+  caption?: string;
+  title?: string;
+  duration?: number; // For audio/music in seconds
+}
+
+export interface WeatherStamp {
+  temperatureC: number;
+  temperatureF: number;
+  condition: string; // e.g. "Sunny", "Overcast", "Rain", "Clear"
+  icon: string; // "sun" | "cloud-sun" | "cloud" | "cloud-rain" | "cloud-snow" | "cloud-lightning" | "wind" | "moon"
+  humidity?: number; // percentage
+  windSpeedKmh?: number;
+  locationName?: string;
+}
+
+export interface LocationTag {
+  placeName: string; // e.g. "Mission District, San Francisco" or "Home Sanctuary"
+  latitude: number;
+  longitude: number;
+  city?: string;
+  country?: string;
+}
+
 export interface JournalEntry {
   id: string;
   userId: string;
@@ -30,8 +57,35 @@ export interface JournalEntry {
   wordCount: number;
   readingTime: number; // in minutes
   promptUsed?: string;
+  media?: MediaAttachment[];
+  isLocked?: boolean;
+  location?: LocationTag;
+  weather?: WeatherStamp;
   createdAt: number; // unix timestamp ms
   updatedAt: number; // unix timestamp ms
+}
+
+export interface JournalTemplate {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  category: string;
+  mood: MoodType;
+  defaultTags: string[];
+  titleSuggestion: string;
+  structure: string;
+}
+
+export interface AIDigest {
+  title: string;
+  overview: string;
+  dominantMood: string;
+  themes: string[];
+  highlights: string[];
+  growthInsight: string;
+  encouragement: string;
+  source?: string;
 }
 
 export interface UserProfile {
